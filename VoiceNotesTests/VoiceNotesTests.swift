@@ -4,7 +4,7 @@ import XCTest
 final class VoiceNotesLogicTests: XCTestCase {
     func testHoldPastHalfSecondFinishes() throws { try VoiceNotesLogicChecks.holdPastHalfSecondFinishes() }
     func testShortHoldDoesNotPaste() throws { try VoiceNotesLogicChecks.shortHoldDoesNotPaste() }
-    func testDoubleTapStartsAndStopsHandsFree() throws { try VoiceNotesLogicChecks.doubleTapStartsAndStopsHandsFree() }
+    func testDoubleTapStartsAndSingleTapStops() throws { try VoiceNotesLogicChecks.doubleTapStartsAndSingleTapStops() }
     func testSingleTapDoesNotStart() throws { try VoiceNotesLogicChecks.singleTapDoesNotStart() }
     func testExpiredDoubleTapDoesNothing() throws { try VoiceNotesLogicChecks.expiredDoubleTapDoesNothing() }
     func testEscapeWhileIdleDoesNothing() throws { try VoiceNotesLogicChecks.escapeWhileIdleDoesNothing() }
@@ -15,7 +15,12 @@ final class VoiceNotesLogicTests: XCTestCase {
     func testHoldDuringHandsFreeDoesNotStop() throws { try VoiceNotesLogicChecks.holdDuringHandsFreeDoesNotStop() }
     func testLateReleaseStillFinishes() throws { try VoiceNotesLogicChecks.lateReleaseStillFinishes() }
     func testSessionEndReturnsToIdle() throws { try VoiceNotesLogicChecks.sessionEndReturnsToIdle() }
-    func testFunctionKeyDownStartsPush() throws { try VoiceNotesLogicChecks.functionKeyDownStartsPush() }
+    func testRightOptionDownStartsPush() throws { try VoiceNotesLogicChecks.rightOptionDownStartsPush() }
+    func testRightOptionReleaseWhileLeftOptionHeld() throws { try VoiceNotesLogicChecks.rightOptionReleaseWhileLeftOptionHeld() }
+    func testRightOptionWorksWithoutDeviceFlag() throws { try VoiceNotesLogicChecks.rightOptionWorksWithoutDeviceFlag() }
+    func testLeftOptionPassesThrough() throws { try VoiceNotesLogicChecks.leftOptionPassesThrough() }
+    func testFunctionKeyPassesThrough() throws { try VoiceNotesLogicChecks.functionKeyPassesThrough() }
+    func testOptionLetterPassesThrough() throws { try VoiceNotesLogicChecks.optionLetterPassesThrough() }
     func testEscapePassesThroughUntilRecording() throws { try VoiceNotesLogicChecks.escapePassesThroughUntilRecording() }
     func testEscapeWhileRecordingIsSwallowed() throws { try VoiceNotesLogicChecks.escapeWhileRecordingIsSwallowed() }
     func testArrowKeyDoesNotStartListening() throws { try VoiceNotesLogicChecks.arrowKeyDoesNotStartListening() }

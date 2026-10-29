@@ -9,6 +9,7 @@ struct KeyCombo: Codable, Equatable, Hashable {
     var function: Bool = false
 
     static let fn = KeyCombo(keyCode: 63, function: true)
+    static let rightOption = KeyCombo(keyCode: 61, option: true)
     static let escape = KeyCombo(keyCode: 53)
     static let deleteLast = KeyCombo(keyCode: 51, control: true, option: true)
 
@@ -19,10 +20,10 @@ struct KeyCombo: Codable, Equatable, Hashable {
     var display: String {
         var parts: [String] = []
         if control { parts.append("⌃") }
-        if option { parts.append("⌥") }
         if shift { parts.append("⇧") }
         if command { parts.append("⌘") }
         if function && keyCode != 63 { parts.append("Fn") }
+        if option && keyCode != 58 && keyCode != 61 { parts.append("⌥") }
         parts.append(Self.name(for: keyCode))
         return parts.joined()
     }
@@ -51,7 +52,7 @@ struct KeyCombo: Codable, Equatable, Hashable {
         30: "]", 31: "O", 32: "U", 33: "[", 34: "I", 35: "P", 36: "Return",
         37: "L", 38: "J", 39: "'", 40: "K", 41: ";", 42: "\\", 43: ",",
         44: "/", 45: "N", 46: "M", 47: ".", 48: "Tab", 49: "Space", 50: "`",
-        51: "⌫", 53: "Esc", 63: "Fn", 76: "Enter", 117: "⌦",
+        51: "⌫", 53: "Esc", 58: "Left ⌥", 61: "Right ⌥", 63: "Fn", 76: "Enter", 117: "⌦",
         96: "F5", 97: "F6", 98: "F7", 99: "F3", 100: "F8", 101: "F9",
         103: "F11", 109: "F10", 111: "F12", 118: "F4", 120: "F2", 122: "F1",
         123: "←", 124: "→", 125: "↓", 126: "↑"
@@ -65,7 +66,7 @@ struct ShortcutMap: Codable, Equatable {
     var delete: KeyCombo
 
     static let `default` = ShortcutMap(
-        push: .fn,
+        push: .rightOption,
         press: nil,
         cancel: .escape,
         delete: .deleteLast
@@ -78,7 +79,7 @@ struct ShortcutMap: Codable, Equatable {
         if let press {
             return "Press \(press.display) to start and stop"
         }
-        return "Double-tap \(push.display) to start and stop"
+        return "Double-tap \(push.display) to start, tap again to stop"
     }
     var cancelLegend: String { "\(cancel.display) cancels" }
     var deleteLegend: String { "\(delete.display) deletes the last note" }
@@ -105,6 +106,9 @@ struct PhysicalKeyEvent: Equatable {
     var shift: Bool
     var command: Bool
     var function: Bool
+    /// Right Option, from the device-dependent flag (NX_DEVICERALTKEYMASK).
+    /// The shared Option flag is also set for Left Option, so it cannot identify this key.
+    var rightOption: Bool = false
     var isRepeat: Bool
 
     var combo: KeyCombo {

@@ -98,6 +98,10 @@ final class AppModel {
         refreshPermissions()
     }
 
+    func shutdown() {
+        hotkeys.stop()
+    }
+
     func perform(_ effects: [HotkeyStateMachine.Effect]) {
         for effect in effects {
             switch effect {
@@ -241,8 +245,8 @@ final class AppModel {
         guard !missing.isEmpty else { return }
         didShowPermissionAlert = true
         let alert = NSAlert()
-        alert.messageText = "Voice Notes can’t hear Fn yet"
-        alert.informativeText = "Turn on \(missing.joined(separator: ", ")) for Voice Notes. After Accessibility and Input Monitoring are on, quit the app and open it again. Hold Fn while you speak, then release it to paste."
+        alert.messageText = "Voice Notes can’t hear the right Option key yet"
+        alert.informativeText = "Turn on \(missing.joined(separator: ", ")) for Voice Notes. After Accessibility and Input Monitoring are on, quit the app and open it again. Hold the right Option key while you speak, then release it to paste."
         alert.addButton(withTitle: "Open Settings")
         alert.addButton(withTitle: "Not Now")
         NSApp.activate()
@@ -579,8 +583,8 @@ final class AppModel {
         savePreview(RecordingHUDView(model: self).padding(24), name: "hud-view", to: directory)
         savePreview(
             VStack(alignment: .leading, spacing: 8) {
-                Text("Hold Fn to record")
-                Text("Double-tap Fn to start and stop")
+                Text("Hold Right ⌥ to record")
+                Text("Double-tap Right ⌥ to start, tap again to stop")
                 Text("Esc cancels")
                 Text("Transcription: \(settings.mode.title)")
             }

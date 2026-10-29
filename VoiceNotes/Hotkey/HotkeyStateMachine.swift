@@ -1,7 +1,7 @@
 import Foundation
 
-/// Hold the push key to record. A quick double tap toggles hands-free.
-/// Releasing before `shortHold` does not finish or paste.
+/// Hold the push key to record. A quick double tap starts hands-free.
+/// One more tap stops hands-free. Releasing before `shortHold` does not paste.
 struct HotkeyStateMachine {
     enum Phase: Equatable {
         case idle
@@ -224,16 +224,14 @@ struct HotkeyStateMachine {
         switch event {
         case .pushUp:
             let held = time - (downAt ?? time)
+            downAt = nil
             if held < Self.shortHold {
-                phase = .awaitingSecondTap(.stopHandsFree)
-                lastUpAt = time
-                return [.cancelArm, .scheduleTapWindow]
+                phase = .processing
+                return [.cancelArm, .finish]
             }
             phase = .handsFree
-            downAt = nil
             return [.cancelArm]
         case .armElapsed:
-            phase = .handsFreeHolding
             return []
         default:
             return []

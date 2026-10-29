@@ -19,11 +19,11 @@ Accessibility and Input Monitoring take effect only after you quit Voice Notes a
 
 Click in the app where you want the text, such as Notes, Mail, or a browser.
 
-- **Hold Fn** while you speak, then release. A short tap does not paste. Hold it for about half a second or longer, speak, and release to finish.
-- **Double-tap Fn** to record hands-free. Double-tap Fn again to finish and paste.
+- **Hold the right Option key** while you speak, then release. A short tap does not paste. Hold it for about half a second or longer, speak, and release to finish.
+- **Double-tap the right Option key** to record hands-free. Tap it once more to finish and paste.
 - **Esc** cancels the current recording. Nothing is transcribed, saved, or pasted.
 
-Fn and Esc are the only keys Voice Notes listens for. Arrow keys and other shortcuts are left alone. While recording, a small pill at the bottom of the screen shows the live transcript. Esc cancels it.
+Right Option and Esc are the only keys Voice Notes listens for. Left Option, Fn, arrow keys, and everything else pass through so you can keep typing. While recording, a small pill at the bottom of the screen shows the live transcript. Esc cancels it.
 
 A start sound and a stop sound play around each recording. Turn them off under Settings → Output.
 

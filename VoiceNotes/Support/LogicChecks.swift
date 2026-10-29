@@ -5,7 +5,7 @@ enum VoiceNotesLogicChecks {
         let tests: [(String, () throws -> Void)] = [
             ("holdPastHalfSecondFinishes", holdPastHalfSecondFinishes),
             ("shortHoldDoesNotPaste", shortHoldDoesNotPaste),
-            ("doubleTapStartsAndStopsHandsFree", doubleTapStartsAndStopsHandsFree),
+            ("doubleTapStartsAndSingleTapStops", doubleTapStartsAndSingleTapStops),
             ("singleTapDoesNotStart", singleTapDoesNotStart),
             ("expiredDoubleTapDoesNothing", expiredDoubleTapDoesNothing),
             ("escapeWhileIdleDoesNothing", escapeWhileIdleDoesNothing),
@@ -16,7 +16,12 @@ enum VoiceNotesLogicChecks {
             ("holdDuringHandsFreeDoesNotStop", holdDuringHandsFreeDoesNotStop),
             ("lateReleaseStillFinishes", lateReleaseStillFinishes),
             ("sessionEndReturnsToIdle", sessionEndReturnsToIdle),
-            ("functionKeyDownStartsPush", functionKeyDownStartsPush),
+            ("rightOptionDownStartsPush", rightOptionDownStartsPush),
+            ("rightOptionReleaseWhileLeftOptionHeld", rightOptionReleaseWhileLeftOptionHeld),
+            ("rightOptionWorksWithoutDeviceFlag", rightOptionWorksWithoutDeviceFlag),
+            ("leftOptionPassesThrough", leftOptionPassesThrough),
+            ("functionKeyPassesThrough", functionKeyPassesThrough),
+            ("optionLetterPassesThrough", optionLetterPassesThrough),
             ("escapePassesThroughUntilRecording", escapePassesThroughUntilRecording),
             ("escapeWhileRecordingIsSwallowed", escapeWhileRecordingIsSwallowed),
             ("arrowKeyDoesNotStartListening", arrowKeyDoesNotStartListening),
@@ -59,23 +64,21 @@ enum VoiceNotesLogicChecks {
         try expectFalse(effects.joined().contains(.finish), "must not finish")
     }
 
-    static func doubleTapStartsAndStopsHandsFree() throws {
+    static func doubleTapStartsAndSingleTapStops() throws {
         let (machine, effects) = try run([
             (.pushDown, 0),
             (.pushUp, 0.10),
             (.pushDown, 0.30),
             (.pushUp, 0.38),
             (.pushDown, 1.00),
-            (.pushUp, 1.08),
-            (.pushDown, 1.25)
+            (.pushUp, 1.08)
         ])
         try expectEqual(effects[0], [.scheduleArm], "first down")
         try expectEqual(effects[1], [.cancelArm, .scheduleTapWindow], "first up")
         try expectEqual(effects[2], [.cancelTapWindow, .startHandsFree], "second down")
         try expectEqual(effects[3], [], "second up")
         try expectEqual(effects[4], [.scheduleArm], "stop down")
-        try expectEqual(effects[5], [.cancelArm, .scheduleTapWindow], "stop up")
-        try expectEqual(effects[6], [.cancelTapWindow, .finish], "second double tap")
+        try expectEqual(effects[5], [.cancelArm, .finish], "one tap stops")
         try expectEqual(machine.phase, .processing, "phase")
     }
 
@@ -179,22 +182,77 @@ enum VoiceNotesLogicChecks {
         try expectEqual(machine.phase, .idle, "phase")
     }
 
-    static func functionKeyDownStartsPush() throws {
+    static func rightOptionDownStartsPush() throws {
+        var router = HotkeyRouter(shortcuts: .default)
+        let down = router.route(rightOption(down: true))
+        try expectEqual(down.events, [.pushDown], "down")
+        try expectTrue(down.swallow, "swallow down")
+        let up = router.route(rightOption(down: false))
+        try expectEqual(up.events, [.pushUp], "up")
+        try expectTrue(up.swallow, "swallow up")
+    }
+
+    static func rightOptionReleaseWhileLeftOptionHeld() throws {
+        var router = HotkeyRouter(shortcuts: .default)
+        _ = router.route(rightOption(down: true))
+        let up = router.route(PhysicalKeyEvent(
+            kind: .flagsChanged, keyCode: 61,
+            control: false, option: true, shift: false, command: false,
+            function: false, rightOption: false, isRepeat: false
+        ))
+        try expectEqual(up.events, [.pushUp], "up")
+        try expectTrue(up.swallow, "swallow")
+    }
+
+    static func rightOptionWorksWithoutDeviceFlag() throws {
         var router = HotkeyRouter(shortcuts: .default)
         let down = router.route(PhysicalKeyEvent(
-            kind: .flagsChanged, keyCode: 63,
-            control: false, option: false, shift: false, command: false,
-            function: true, isRepeat: false
+            kind: .flagsChanged, keyCode: 61,
+            control: false, option: true, shift: false, command: false,
+            function: false, isRepeat: false
         ))
         try expectEqual(down.events, [.pushDown], "down")
         try expectTrue(down.swallow, "swallow down")
         let up = router.route(PhysicalKeyEvent(
-            kind: .flagsChanged, keyCode: 63,
+            kind: .flagsChanged, keyCode: 61,
             control: false, option: false, shift: false, command: false,
             function: false, isRepeat: false
         ))
         try expectEqual(up.events, [.pushUp], "up")
         try expectTrue(up.swallow, "swallow up")
+    }
+
+    static func leftOptionPassesThrough() throws {
+        var router = HotkeyRouter(shortcuts: .default)
+        let result = router.route(PhysicalKeyEvent(
+            kind: .flagsChanged, keyCode: 58,
+            control: false, option: true, shift: false, command: false,
+            function: false, isRepeat: false
+        ))
+        try expectEqual(result.events, [], "left option")
+        try expectFalse(result.swallow, "swallow")
+    }
+
+    static func functionKeyPassesThrough() throws {
+        var router = HotkeyRouter(shortcuts: .default)
+        let result = router.route(PhysicalKeyEvent(
+            kind: .flagsChanged, keyCode: 63,
+            control: false, option: false, shift: false, command: false,
+            function: true, isRepeat: false
+        ))
+        try expectEqual(result.events, [], "fn")
+        try expectFalse(result.swallow, "swallow")
+    }
+
+    static func optionLetterPassesThrough() throws {
+        var router = HotkeyRouter(shortcuts: .default)
+        let result = router.route(PhysicalKeyEvent(
+            kind: .keyDown, keyCode: 0,
+            control: false, option: true, shift: false, command: false,
+            function: false, isRepeat: false
+        ))
+        try expectEqual(result.events, [], "letter")
+        try expectFalse(result.swallow, "swallow")
     }
 
     static func escapePassesThroughUntilRecording() throws {
@@ -207,13 +265,12 @@ enum VoiceNotesLogicChecks {
 
     static func escapeWhileRecordingIsSwallowed() throws {
         var router = HotkeyRouter(shortcuts: .default)
-        _ = router.route(PhysicalKeyEvent(
-            kind: .flagsChanged, keyCode: 63,
-            control: false, option: false, shift: false, command: false,
-            function: true, isRepeat: false
-        ))
         router.capturesCancel = true
-        let result = router.route(escape(function: true))
+        let result = router.route(PhysicalKeyEvent(
+            kind: .keyDown, keyCode: 53,
+            control: false, option: true, shift: false, command: false,
+            function: false, rightOption: true, isRepeat: false
+        ))
         try expectEqual(result.events, [.cancel], "cancel only")
         try expectTrue(result.swallow, "swallow")
     }
@@ -305,6 +362,14 @@ enum VoiceNotesLogicChecks {
             all.append(machine.handle(event, at: time))
         }
         return (machine, all)
+    }
+
+    private static func rightOption(down: Bool) -> PhysicalKeyEvent {
+        PhysicalKeyEvent(
+            kind: .flagsChanged, keyCode: 61,
+            control: false, option: down, shift: false, command: false,
+            function: false, rightOption: down, isRepeat: false
+        )
     }
 
     private static func escape(function: Bool = false) -> PhysicalKeyEvent {

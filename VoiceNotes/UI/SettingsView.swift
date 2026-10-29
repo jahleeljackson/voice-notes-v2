@@ -85,11 +85,11 @@ struct SettingsView: View {
 
             Section("Shortcuts") {
                 LabeledContent("Push to talk") {
-                    Text("Hold Fn")
+                    Text("Hold Right ⌥")
                         .foregroundStyle(.secondary)
                 }
                 LabeledContent("Press to record") {
-                    Text("Double-tap Fn")
+                    Text("Double-tap Right ⌥, tap again to stop")
                         .foregroundStyle(.secondary)
                 }
                 LabeledContent("Cancel") {

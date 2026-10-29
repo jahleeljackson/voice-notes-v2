@@ -36,4 +36,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         AppModel.shared.noteBecameActive()
     }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        AppModel.shared.shutdown()
+    }
 }

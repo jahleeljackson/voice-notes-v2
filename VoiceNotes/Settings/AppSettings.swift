@@ -34,6 +34,8 @@ enum ShortcutSync {
 final class AppSettings {
     static let shared = AppSettings()
 
+    /// Bump when the built-in shortcut map changes so a saved Fn binding cannot linger.
+    static let shortcutsVersion = 2
     private let defaults = UserDefaults.standard
 
     var mode: TranscriptionMode {
@@ -70,11 +72,17 @@ final class AppSettings {
         soundsEnabled = defaults.object(forKey: Keys.sounds) == nil ? true : defaults.bool(forKey: Keys.sounds)
         let storedModel = defaults.string(forKey: Keys.model) ?? CleanupPrompt.defaultModel
         model = storedModel.isEmpty ? CleanupPrompt.defaultModel : storedModel
-        if let data = defaults.data(forKey: Keys.shortcuts),
+        let storedVersion = defaults.integer(forKey: Keys.shortcutsVersion)
+        if storedVersion >= Self.shortcutsVersion,
+           let data = defaults.data(forKey: Keys.shortcuts),
            let decoded = try? JSONDecoder().decode(ShortcutMap.self, from: data) {
             shortcuts = decoded
         } else {
             shortcuts = .default
+            if let data = try? JSONEncoder().encode(ShortcutMap.default) {
+                defaults.set(data, forKey: Keys.shortcuts)
+            }
+            defaults.set(Self.shortcutsVersion, forKey: Keys.shortcutsVersion)
         }
         hasAPIKey = KeychainStore.load() != nil
         ShortcutSync.box.updateShortcuts(shortcuts)
@@ -102,6 +110,7 @@ final class AppSettings {
         static let sounds = "soundsEnabled"
         static let model = "model"
         static let shortcuts = "shortcuts"
+        static let shortcutsVersion = "shortcutsVersion"
     }
 }
 

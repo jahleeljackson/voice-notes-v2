@@ -12,12 +12,56 @@ final class HotkeyMonitor {
     private let lock = NSLock()
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    private var tapRunLoop: CFRunLoop?
+    private var thread: Thread?
     private var armToken = 0
     private var tapToken = 0
-    private(set) var isInstalled = false
+    private var installed = false
+
+    /// NX_DEVICERALTKEYMASK. Distinguishes Right Option from Left Option.
+    private static let rightOptionDeviceMask: UInt64 = 0x40
+
+    var isInstalled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return installed
+    }
 
     func start() {
-        guard tap == nil else { return }
+        lock.lock()
+        if thread != nil {
+            lock.unlock()
+            return
+        }
+        lock.unlock()
+
+        let ready = DispatchSemaphore(value: 0)
+        let thread = Thread { [self] in
+            self.runTap(ready: ready)
+        }
+        thread.name = "VoiceNotesHotkey"
+        thread.qualityOfService = .userInteractive
+        lock.lock()
+        self.thread = thread
+        lock.unlock()
+        thread.start()
+        _ = ready.wait(timeout: .now() + 2)
+    }
+
+    func stop() {
+        lock.lock()
+        let tap = self.tap
+        let runLoop = self.tapRunLoop
+        lock.unlock()
+        if let tap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+        }
+        if let runLoop {
+            CFRunLoopStop(runLoop)
+        }
+    }
+
+    private func runTap(ready: DispatchSemaphore) {
         let mask = (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
@@ -29,27 +73,43 @@ final class HotkeyMonitor {
             callback: hotkeyTapCallback,
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
-            isInstalled = false
+            lock.lock()
+            installed = false
+            thread = nil
+            lock.unlock()
+            ready.signal()
             return
         }
-        self.tap = tap
-        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        runLoopSource = source
-        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
-        isInstalled = true
-    }
 
-    func stop() {
-        if let tap {
-            CGEvent.tapEnable(tap: tap, enable: false)
+        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        let runLoop = CFRunLoopGetCurrent()
+        lock.lock()
+        self.tap = tap
+        runLoopSource = source
+        tapRunLoop = runLoop
+        lock.unlock()
+        CFRunLoopAddSource(runLoop, source, .commonModes)
+        // Enable only once this thread is actually spinning. Enabling earlier lets the
+        // system time the tap out and stall keyboard delivery.
+        CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) { [self] in
+            CGEvent.tapEnable(tap: tap, enable: true)
+            self.lock.lock()
+            self.installed = true
+            self.lock.unlock()
+            ready.signal()
         }
-        if let runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
-        }
-        tap = nil
+        CFRunLoopWakeUp(runLoop)
+        CFRunLoopRun()
+
+        CGEvent.tapEnable(tap: tap, enable: false)
+        CFRunLoopRemoveSource(runLoop, source, .commonModes)
+        lock.lock()
+        self.tap = nil
         runLoopSource = nil
-        isInstalled = false
+        tapRunLoop = nil
+        installed = false
+        thread = nil
+        lock.unlock()
     }
 
     func noteSessionEnded() {
@@ -73,6 +133,15 @@ final class HotkeyMonitor {
             }
             return Unmanaged.passUnretained(event)
         }
+        // Letters, Left Option, Fn, and every other key return here, before any lock.
+        // Only Right Option and Esc are allowed to be swallowed.
+        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        let isRightOption = type == .flagsChanged && keyCode == KeyCombo.rightOption.keyCode
+        let isEscape = keyCode == KeyCombo.escape.keyCode && (type == .keyDown || type == .keyUp)
+        guard isRightOption || isEscape else {
+            return Unmanaged.passUnretained(event)
+        }
+
         let physical = physicalEvent(type: type, event: event)
         if let rebound = capturedRebind(physical) {
             switch rebound {
@@ -80,14 +149,15 @@ final class HotkeyMonitor {
                 DispatchQueue.main.async { [weak self] in
                     self?.onRebind?(action, combo)
                 }
+                return nil
             case .cancelled:
                 DispatchQueue.main.async { [weak self] in
                     self?.onRebindCancelled?()
                 }
+                return nil
             case .ignore:
                 break
             }
-            return nil
         }
 
         let swallow = ingest(physical)
@@ -110,6 +180,7 @@ final class HotkeyMonitor {
             shift: flags.contains(.maskShift),
             command: flags.contains(.maskCommand),
             function: flags.contains(.maskSecondaryFn),
+            rightOption: (flags.rawValue & Self.rightOptionDeviceMask) != 0,
             isRepeat: event.getIntegerValueField(.keyboardEventAutorepeat) == 1
         )
     }
@@ -202,6 +273,9 @@ final class HotkeyMonitor {
             && !event.control && !event.option && !event.shift && !event.command
         if plainEscape && action != .cancel {
             return .cancelled
+        }
+        if event.kind == .flagsChanged && event.keyCode == KeyCombo.rightOption.keyCode && event.rightOption {
+            return .assigned(action, .rightOption)
         }
         if event.kind == .flagsChanged && event.keyCode == 63 && event.function {
             return .assigned(action, .fn)

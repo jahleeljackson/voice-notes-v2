@@ -8,41 +8,59 @@ struct HotkeyRouter {
 
     var shortcuts: ShortcutMap
     var capturesCancel = false
-    private var functionIsDown = false
+    private var pushIsDown = false
+    private var swallowCancelRelease = false
 
     init(shortcuts: ShortcutMap, capturesCancel: Bool = false) {
         self.shortcuts = shortcuts
         self.capturesCancel = capturesCancel
     }
 
-    /// Only the Fn key (key code 63) records. Arrow keys and other keys often
-    /// carry the Fn flag on macOS, so the flag alone must not start listening.
-    /// Esc is the only other key the app handles.
+    /// Right Option records. Esc cancels an active session.
+    /// Every other key, including Left Option and Fn, is passed through so typing keeps working.
     mutating func route(_ event: PhysicalKeyEvent) -> RouteResult {
-        if event.isRepeat {
-            return RouteResult(events: [], swallow: event.keyCode == KeyCombo.fn.keyCode)
+        if event.keyCode == shortcuts.cancel.keyCode {
+            return routeCancel(event)
+        }
+        guard event.keyCode == shortcuts.push.keyCode, event.kind == .flagsChanged else {
+            return RouteResult(events: [], swallow: false)
         }
 
+        let down = rightOptionIsDown(event)
         var events: [HotkeyStateMachine.Event] = []
-        var swallow = false
-
-        if event.keyCode == KeyCombo.fn.keyCode {
-            if event.function && !functionIsDown {
-                events.append(.pushDown)
-            } else if !event.function && functionIsDown {
-                events.append(.pushUp)
-            }
-            functionIsDown = event.function
-            swallow = true
+        if down && !pushIsDown {
+            events.append(.pushDown)
+        } else if !down && pushIsDown {
+            events.append(.pushUp)
         }
+        pushIsDown = down
+        return RouteResult(events: events, swallow: true)
+    }
 
-        if event.kind == .keyDown && event.keyCode == KeyCombo.escape.keyCode {
-            events.append(.cancel)
+    /// Prefer the Right Option device flag. If the tap omitted it, a flags-changed
+    /// event for this key still means the key itself changed.
+    private func rightOptionIsDown(_ event: PhysicalKeyEvent) -> Bool {
+        if event.rightOption { return true }
+        if !event.option { return false }
+        return !pushIsDown
+    }
+
+    private mutating func routeCancel(_ event: PhysicalKeyEvent) -> RouteResult {
+        let plain = !event.control && !event.shift && !event.command
+        if event.kind == .keyDown && plain && !event.isRepeat {
+            var swallow = false
             if capturesCancel {
                 swallow = true
+                swallowCancelRelease = true
             }
+            return RouteResult(events: [.cancel], swallow: swallow)
         }
-
-        return RouteResult(events: events, swallow: swallow)
+        if swallowCancelRelease && (event.kind == .keyDown || event.kind == .keyUp) {
+            if event.kind == .keyUp {
+                swallowCancelRelease = false
+            }
+            return RouteResult(events: [], swallow: true)
+        }
+        return RouteResult(events: [], swallow: false)
     }
 }
