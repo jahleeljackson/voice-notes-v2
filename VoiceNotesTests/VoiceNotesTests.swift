@@ -18,7 +18,8 @@ final class VoiceNotesLogicTests: XCTestCase {
     func testFunctionKeyDownStartsPush() throws { try VoiceNotesLogicChecks.functionKeyDownStartsPush() }
     func testEscapePassesThroughUntilRecording() throws { try VoiceNotesLogicChecks.escapePassesThroughUntilRecording() }
     func testEscapeWhileRecordingIsSwallowed() throws { try VoiceNotesLogicChecks.escapeWhileRecordingIsSwallowed() }
-    func testDeleteChordIsSwallowed() throws { try VoiceNotesLogicChecks.deleteChordIsSwallowed() }
+    func testArrowKeyDoesNotStartListening() throws { try VoiceNotesLogicChecks.arrowKeyDoesNotStartListening() }
+    func testDeleteChordIsIgnored() throws { try VoiceNotesLogicChecks.deleteChordIsIgnored() }
     func testUnrelatedKeyIsIgnored() throws { try VoiceNotesLogicChecks.unrelatedKeyIsIgnored() }
     func testPromptRequiresCleanupRules() throws { try VoiceNotesLogicChecks.promptRequiresCleanupRules() }
     func testRequestIncludesMinimalReasoning() throws { try VoiceNotesLogicChecks.requestIncludesMinimalReasoning() }

@@ -119,16 +119,11 @@ final class HotkeyMonitor {
         let (shortcuts, _) = ShortcutSync.box.snapshot()
         router.shortcuts = shortcuts
         router.capturesCancel = machine.capturesCancel
-        if machine.phase == .idle {
-            machine.pressIsDoubleTapOfPushKey = shortcuts.press == nil
-        }
+        machine.pressIsDoubleTapOfPushKey = true
         let routed = router.route(physical)
         var effects: [HotkeyStateMachine.Effect] = []
         let now = ProcessInfo.processInfo.systemUptime
         for event in routed.events {
-            if machine.phase == .idle {
-                machine.pressIsDoubleTapOfPushKey = shortcuts.press == nil
-            }
             effects.append(contentsOf: machine.handle(event, at: now))
         }
         let timers = takeTimers(from: effects)
@@ -140,10 +135,7 @@ final class HotkeyMonitor {
 
     private func feed(_ event: HotkeyStateMachine.Event) {
         lock.lock()
-        let (shortcuts, _) = ShortcutSync.box.snapshot()
-        if machine.phase == .idle {
-            machine.pressIsDoubleTapOfPushKey = shortcuts.press == nil
-        }
+        machine.pressIsDoubleTapOfPushKey = true
         let effects = machine.handle(event, at: ProcessInfo.processInfo.systemUptime)
         let timers = takeTimers(from: effects)
         lock.unlock()

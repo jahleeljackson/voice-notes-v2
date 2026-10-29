@@ -15,10 +15,9 @@ struct MenuBarView: View {
     private var model = AppModel.shared
 
     var body: some View {
-        Text(model.settings.shortcuts.pushLegend)
-        Text(model.settings.shortcuts.pressLegend)
-        Text(model.settings.shortcuts.cancelLegend)
-        Text(model.settings.shortcuts.deleteLegend)
+        Text("Hold Fn to record")
+        Text("Double-tap Fn to start and stop")
+        Text("Esc cancels")
         Divider()
         Button("Transcription: \(model.settings.mode.title)") {
             model.toggleMode()

@@ -76,7 +76,7 @@ struct RecordingHUDView: View {
                     .foregroundStyle(.white.opacity(0.92))
                     .lineLimit(2)
                 if showsCancel {
-                    Text(model.settings.shortcuts.cancelLegend)
+                    Text("Esc cancels")
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.55))
                 }

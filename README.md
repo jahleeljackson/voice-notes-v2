@@ -22,9 +22,8 @@ Click in the app where you want the text, such as Notes, Mail, or a browser.
 - **Hold Fn** while you speak, then release. A short tap does not paste. Hold it for about half a second or longer, speak, and release to finish.
 - **Double-tap Fn** to record hands-free. Double-tap Fn again to finish and paste.
 - **Esc** cancels the current recording. Nothing is transcribed, saved, or pasted.
-- **Control-Option-Delete** deletes the newest saved note. It does not undo text in the other app.
 
-You can change all four shortcuts in Settings. While recording, a small pill at the bottom of the screen shows the live transcript. Press Esc on that pill’s hint to cancel.
+Fn and Esc are the only keys Voice Notes listens for. Arrow keys and other shortcuts are left alone. While recording, a small pill at the bottom of the screen shows the live transcript. Esc cancels it.
 
 A start sound and a stop sound play around each recording. Turn them off under Settings → Output.
 

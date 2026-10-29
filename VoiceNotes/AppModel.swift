@@ -579,10 +579,9 @@ final class AppModel {
         savePreview(RecordingHUDView(model: self).padding(24), name: "hud-view", to: directory)
         savePreview(
             VStack(alignment: .leading, spacing: 8) {
-                Text(settings.shortcuts.pushLegend)
-                Text(settings.shortcuts.pressLegend)
-                Text(settings.shortcuts.cancelLegend)
-                Text(settings.shortcuts.deleteLegend)
+                Text("Hold Fn to record")
+                Text("Double-tap Fn to start and stop")
+                Text("Esc cancels")
                 Text("Transcription: \(settings.mode.title)")
             }
             .padding(16)

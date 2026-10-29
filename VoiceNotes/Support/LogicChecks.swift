@@ -19,7 +19,8 @@ enum VoiceNotesLogicChecks {
             ("functionKeyDownStartsPush", functionKeyDownStartsPush),
             ("escapePassesThroughUntilRecording", escapePassesThroughUntilRecording),
             ("escapeWhileRecordingIsSwallowed", escapeWhileRecordingIsSwallowed),
-            ("deleteChordIsSwallowed", deleteChordIsSwallowed),
+            ("arrowKeyDoesNotStartListening", arrowKeyDoesNotStartListening),
+            ("deleteChordIsIgnored", deleteChordIsIgnored),
             ("unrelatedKeyIsIgnored", unrelatedKeyIsIgnored),
             ("promptRequiresCleanupRules", promptRequiresCleanupRules),
             ("requestIncludesMinimalReasoning", requestIncludesMinimalReasoning),
@@ -217,15 +218,28 @@ enum VoiceNotesLogicChecks {
         try expectTrue(result.swallow, "swallow")
     }
 
-    static func deleteChordIsSwallowed() throws {
+    static func arrowKeyDoesNotStartListening() throws {
+        var router = HotkeyRouter(shortcuts: .default)
+        for keyCode: UInt16 in [123, 124, 125, 126] {
+            let result = router.route(PhysicalKeyEvent(
+                kind: .keyDown, keyCode: keyCode,
+                control: false, option: false, shift: false, command: false,
+                function: true, isRepeat: false
+            ))
+            try expectEqual(result.events, [], "arrow \(keyCode)")
+            try expectFalse(result.swallow, "arrow \(keyCode) swallow")
+        }
+    }
+
+    static func deleteChordIsIgnored() throws {
         var router = HotkeyRouter(shortcuts: .default)
         let result = router.route(PhysicalKeyEvent(
             kind: .keyDown, keyCode: 51,
             control: true, option: true, shift: false, command: false,
-            function: false, isRepeat: false
+            function: true, isRepeat: false
         ))
-        try expectEqual(result.events, [.delete], "delete")
-        try expectTrue(result.swallow, "swallow")
+        try expectEqual(result.events, [], "delete")
+        try expectFalse(result.swallow, "swallow")
     }
 
     static func unrelatedKeyIsIgnored() throws {

@@ -84,26 +84,17 @@ struct SettingsView: View {
             }
 
             Section("Shortcuts") {
-                shortcutRow("Push to talk", value: "Hold \(settings.shortcuts.push.display)", action: .push)
-                shortcutRow(
-                    "Press to record",
-                    value: settings.shortcuts.press?.display ?? "Double-tap \(settings.shortcuts.push.display)",
-                    action: .press
-                )
-                if settings.shortcuts.press != nil {
-                    Button("Use double-tap of the push key") {
-                        model.useDoubleTapPress()
-                    }
+                LabeledContent("Push to talk") {
+                    Text("Hold Fn")
+                        .foregroundStyle(.secondary)
                 }
-                shortcutRow("Cancel", value: settings.shortcuts.cancel.display, action: .cancel)
-                shortcutRow("Delete last note", value: settings.shortcuts.delete.display, action: .delete)
-                if let rebind = model.rebind {
-                    HStack {
-                        Text("Press a key for \(rebind.label)… Esc backs out.")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Cancel") { model.cancelRebind() }
-                    }
+                LabeledContent("Press to record") {
+                    Text("Double-tap Fn")
+                        .foregroundStyle(.secondary)
+                }
+                LabeledContent("Cancel") {
+                    Text("Esc")
+                        .foregroundStyle(.secondary)
                 }
             }
 
@@ -111,16 +102,6 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding(12)
         .frame(minWidth: 440, minHeight: 560)
-    }
-
-    private func shortcutRow(_ title: String, value: String, action: ShortcutAction) -> some View {
-        LabeledContent(title) {
-            HStack {
-                Text(value)
-                    .foregroundStyle(.secondary)
-                Button("Change") { model.beginRebind(action) }
-            }
-        }
     }
 
     private func permissionRow(_ title: String, granted: Bool, action: @escaping () -> Void) -> some View {
@@ -142,17 +123,6 @@ struct SettingsView: View {
             keyMessage = settings.hasAPIKey ? "Saved." : "Removed."
         } catch {
             keyMessage = error.localizedDescription
-        }
-    }
-}
-
-extension ShortcutAction {
-    var label: String {
-        switch self {
-        case .push: return "push to talk"
-        case .press: return "press to record"
-        case .cancel: return "cancel"
-        case .delete: return "delete last note"
         }
     }
 }
